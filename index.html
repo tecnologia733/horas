@@ -1,49 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Liturgia das Horas (Depuração)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🛐 Liturgia das Horas</title>
   <style>
     body {
       font-family: sans-serif;
       background: #f1f5f9;
+      color: #1e293b;
       padding: 2rem;
-      margin: 0;
     }
     h1 {
       text-align: center;
       color: #2563eb;
     }
-    .hour {
-      background: #ffffff;
-      margin: 2rem auto;
-      max-width: 800px;
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-    }
-    .hour h2 {
-      color: #1e40af;
-    }
-    .hour p {
-      line-height: 1.6;
-    }
     .log {
+      background: #e0f2fe;
+      padding: 1rem;
+      margin-top: 2rem;
+      border-radius: 8px;
       font-size: 0.9rem;
-      background: #fef9c3;
-      padding: 0.5rem;
-      margin: 1rem auto;
-      max-width: 800px;
-      border: 1px solid #facc15;
-      color: #854d0e;
+      white-space: pre-wrap;
+    }
+    .prayer {
+      background: #fff;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-left: 4px solid #2563eb;
+      border-radius: 6px;
+    }
+    .prayer h2 {
+      margin-top: 0;
     }
   </style>
 </head>
 <body>
-  <h1>🛠 Liturgia das Horas - Depuração</h1>
-  <div id="log" class="log">⏳ Iniciando carregamento...</div>
-  <div id="app">Carregando...</div>
+  <h1>🛐 Liturgia das Horas</h1>
+  <div id="app">⏳ Carregando orações...</div>
+  <div class="log" id="log">🛠 Liturgia das Horas - Depuração</div>
 
   <script>
     const app = document.getElementById('app');
@@ -51,109 +46,76 @@
 
     function debug(msg) {
       console.log(msg);
-      log.innerHTML += `<br>📌 ${msg}`;
+      log.textContent += '\n' + msg;
     }
 
-    const traducoes = {
-      'Office of Readings': 'Ofício de Leituras',
+    const translations = {
+      'Matins': 'Matinas',
+      'Lauds': 'Laudes',
+      'Prime': 'Prima',
+      'Terce': 'Terça',
+      'Sext': 'Sexta',
+      'None': 'Nona',
+      'Vespers': 'Vésperas',
+      'Compline': 'Completas',
       'Morning Prayer': 'Oração da Manhã',
-      'Midmorning Prayer': 'Oração da Terça',
-      'Midday Prayer': 'Oração da Sexta',
-      'Midafternoon Prayer': 'Oração da Nona',
-      'Evening Prayer': 'Vésperas',
-      'Night Prayer': 'Completas',
-      'Psalm': 'Salmo',
-      'Reading': 'Leitura',
-      'Antiphon': 'Antífona',
-      'Hymn': 'Hino',
-      'Intercessions': 'Preces',
-      'Prayer': 'Oração',
-      'Our Father': 'Pai Nosso',
-      'Amen': 'Amém',
-      'Alleluia': 'Aleluia',
-      'Lord': 'Senhor',
-      'God': 'Deus',
-      'Christ': 'Cristo'
+      'Evening Prayer': 'Oração da Tarde',
+      'Night Prayer': 'Oração da Noite',
+      'Office of Readings': 'Ofício de Leituras'
     };
 
-    function traduzir(texto) {
-      if (!texto) return '';
-      for (const [en, pt] of Object.entries(traducoes)) {
+    function traduzir(str) {
+      if (!str) return '';
+      for (const [en, pt] of Object.entries(translations)) {
         const regex = new RegExp(en, 'gi');
-        texto = texto.replace(regex, pt);
+        str = str.replace(regex, pt);
       }
-      return texto;
+      return str;
     }
 
-    async function carregarOracoes() {
+    async function fetchFeed() {
       try {
-        const proxyUrl = 'https://api.allorigins.win/get?url=';
+        const proxy = 'https://api.codetabs.com/v1/proxy?quest=';
         const feedUrl = 'https://divineoffice.org/feed/';
-        const finalUrl = proxyUrl + encodeURIComponent(feedUrl);
-        
-        debug('🔍 Buscando RSS em: ' + finalUrl);
-        const res = await fetch(finalUrl);
+        const fullUrl = proxy + encodeURIComponent(feedUrl);
 
-        if (!res.ok) {
-          debug(`❌ Erro na resposta HTTP: ${res.status}`);
-          app.innerHTML = '<p>Erro na requisição.</p>';
-          return;
-        }
+        debug('⏳ Iniciando carregamento...');
+        debug('📌 🔍 Buscando RSS em: ' + fullUrl);
 
-        const data = await res.json();
-        if (!data.contents) {
-          debug('❌ Nenhum conteúdo retornado pelo proxy.');
-          app.innerHTML = '<p>Sem conteúdo retornado.</p>';
-          return;
-        }
+        const res = await fetch(fullUrl);
+        if (!res.ok) throw new Error('Erro HTTP: ' + res.status);
+        const xmlText = await res.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xmlText, 'text/xml');
+        const items = xml.querySelectorAll('item');
 
-        const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
-        const items = Array.from(xml.querySelectorAll('item'));
-
-        debug(`✅ Itens encontrados no feed: ${items.length}`);
+        debug(`📦 Itens encontrados: ${items.length}`);
 
         if (items.length === 0) {
-          debug('⚠️ Feed XML retornado sem <item>.');
-          app.innerHTML = '<p>Nenhuma oração disponível.</p>';
+          app.innerHTML = '⚠️ Nenhum conteúdo encontrado no feed.';
           return;
         }
 
-        app.innerHTML = '';
-
-        for (const item of items) {
-          const titleEl = item.querySelector('title');
-          const contentEl = item.getElementsByTagName('content:encoded')[0];
-
-          const tituloOriginal = titleEl?.textContent || '';
-          const conteudoOriginal = contentEl?.textContent || '';
-
-          debug(`📄 Título original: "${tituloOriginal.slice(0, 50)}..."`);
-          debug(`📦 Conteúdo presente: ${!!conteudoOriginal}`);
-
-          const titulo = traduzir(tituloOriginal);
-          const conteudo = traduzir(conteudoOriginal);
-
-          const div = document.createElement('div');
-          div.className = 'hour';
-          div.innerHTML = `
-            <h2>${titulo}</h2>
-            <div>${conteudo || '<em>Sem conteúdo.</em>'}</div>
+        let html = '';
+        items.forEach((item, i) => {
+          const title = traduzir(item.querySelector('title')?.textContent);
+          const desc = traduzir(item.querySelector('description')?.textContent);
+          html += `
+            <div class="prayer">
+              <h2>${title}</h2>
+              <div>${desc}</div>
+            </div>
           `;
-          app.appendChild(div);
-        }
+        });
 
-        if (items.length === 0) {
-          app.innerHTML = '<p>Nenhuma oração foi encontrada.</p>';
-        }
-
+        app.innerHTML = html;
       } catch (err) {
-        console.error(err);
-        debug('❌ Erro inesperado: ' + err.message);
-        app.innerHTML = '<p>Erro ao carregar as orações.</p>';
+        debug('❌ Erro ao buscar feed: ' + err.message);
+        app.innerHTML = 'Erro ao carregar orações. Verifique o console.';
       }
     }
 
-    carregarOracoes();
+    fetchFeed();
   </script>
 </body>
 </html>
