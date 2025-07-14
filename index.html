@@ -2,120 +2,147 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🛐 Liturgia das Horas</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f1f5f9;
-      color: #1e293b;
-      padding: 2rem;
+      margin: 0;
+      background: #f3f4f6;
+      color: #111827;
     }
-    h1 {
+    header {
+      background: #3b82f6;
+      color: white;
+      padding: 1rem;
       text-align: center;
-      color: #2563eb;
+      font-size: 1.5rem;
     }
-    .log {
-      background: #e0f2fe;
+    main {
       padding: 1rem;
-      margin-top: 2rem;
+    }
+    .entry {
+      background: white;
+      margin-bottom: 1rem;
+      padding: 1rem;
       border-radius: 8px;
-      font-size: 0.9rem;
-      white-space: pre-wrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .prayer {
-      background: #fff;
-      padding: 1rem;
-      margin: 1rem 0;
-      border-left: 4px solid #2563eb;
-      border-radius: 6px;
-    }
-    .prayer h2 {
+    .entry h2 {
       margin-top: 0;
+      font-size: 1.2rem;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #4b5563;
     }
   </style>
 </head>
 <body>
-  <h1>🛐 Liturgia das Horas</h1>
-  <div id="app">⏳ Carregando orações...</div>
-  <div class="log" id="log">🛠 Liturgia das Horas - Depuração</div>
+  <header>🛐 Liturgia das Horas</header>
+  <main id="content">
+    <div class="loading">⏳ Carregando Liturgia do dia...</div>
+  </main>
 
   <script>
-    const app = document.getElementById('app');
-    const log = document.getElementById('log');
+    const feedUrl = "https://api.codetabs.com/v1/proxy?quest=https%3A%2F%2Fdivineoffice.org%2Ffeed%2F";
+    const contentEl = document.getElementById("content");
 
-    function debug(msg) {
-      console.log(msg);
-      log.textContent += '\n' + msg;
-    }
-
-    const translations = {
-      'Matins': 'Matinas',
-      'Lauds': 'Laudes',
-      'Prime': 'Prima',
-      'Terce': 'Terça',
-      'Sext': 'Sexta',
-      'None': 'Nona',
-      'Vespers': 'Vésperas',
-      'Compline': 'Completas',
-      'Morning Prayer': 'Oração da Manhã',
-      'Evening Prayer': 'Oração da Tarde',
-      'Night Prayer': 'Oração da Noite',
-      'Office of Readings': 'Ofício de Leituras'
+    const translacoes = {
+      "Invitatory": "Invitatório",
+      "Office of Readings": "Ofício de Leituras",
+      "Morning Prayer": "Oração da Manhã",
+      "Midmorning Prayer": "Oração da Terceira",
+      "Midday Prayer": "Oração da Sexta",
+      "Midafternoon Prayer": "Oração da Nona",
+      "Evening Prayer": "Oração da Tarde",
+      "Night Prayer": "Oração da Noite"
     };
 
-    function traduzir(str) {
-      if (!str) return '';
-      for (const [en, pt] of Object.entries(translations)) {
-        const regex = new RegExp(en, 'gi');
-        str = str.replace(regex, pt);
+    const ordem = [
+      "Invitatório",
+      "Ofício de Leituras",
+      "Oração da Manhã",
+      "Oração da Terceira",
+      "Oração da Sexta",
+      "Oração da Nona",
+      "Oração da Tarde",
+      "Oração da Noite"
+    ];
+
+    function traduzirTitulo(titulo) {
+      for (const [en, pt] of Object.entries(translacoes)) {
+        if (titulo.includes(en)) {
+          return titulo.replace(en, pt);
+        }
       }
-      return str;
+      return titulo;
     }
 
-    async function fetchFeed() {
+    function ordenarPorLiturgia(entries) {
+      return entries.sort((a, b) => {
+        const ta = ordem.findIndex(o => a.title.includes(o));
+        const tb = ordem.findIndex(o => b.title.includes(o));
+        return ta - tb;
+      });
+    }
+
+    function formatarDataHoje() {
+      const hoje = new Date();
+      return hoje.toLocaleString("en-US", {
+        month: "short",
+        day: "2-digit"
+      }); // ex: "Jul 14"
+    }
+
+    async function carregarLiturgia() {
+      console.log("📌 🔍 Buscando RSS em:", feedUrl);
       try {
-        const proxy = 'https://api.codetabs.com/v1/proxy?quest=';
-        const feedUrl = 'https://divineoffice.org/feed/';
-        const fullUrl = proxy + encodeURIComponent(feedUrl);
+        const res = await fetch(feedUrl);
+        const data = await res.text();
 
-        debug('⏳ Iniciando carregamento...');
-        debug('📌 🔍 Buscando RSS em: ' + fullUrl);
-
-        const res = await fetch(fullUrl);
-        if (!res.ok) throw new Error('Erro HTTP: ' + res.status);
-        const xmlText = await res.text();
         const parser = new DOMParser();
-        const xml = parser.parseFromString(xmlText, 'text/xml');
-        const items = xml.querySelectorAll('item');
+        const xml = parser.parseFromString(data, "text/xml");
+        const items = xml.querySelectorAll("item");
 
-        debug(`📦 Itens encontrados: ${items.length}`);
+        const hoje = formatarDataHoje();
+        console.log("📅 Dia atual:", hoje);
 
-        if (items.length === 0) {
-          app.innerHTML = '⚠️ Nenhum conteúdo encontrado no feed.';
+        const entries = Array.from(items).map(item => ({
+          title: item.querySelector("title")?.textContent ?? "",
+          content: item.querySelector("description")?.textContent ?? ""
+        })).filter(entry =>
+          entry.title.includes(hoje) &&
+          ordem.some(o => traduzirTitulo(entry.title).includes(o))
+        ).map(entry => ({
+          title: traduzirTitulo(entry.title),
+          content: entry.content
+        }));
+
+        const ordenados = ordenarPorLiturgia(entries);
+        contentEl.innerHTML = "";
+
+        if (ordenados.length === 0) {
+          contentEl.innerHTML = `<p class="loading">⚠️ Nenhuma liturgia encontrada para hoje (${hoje}).</p>`;
           return;
         }
 
-        let html = '';
-        items.forEach((item, i) => {
-          const title = traduzir(item.querySelector('title')?.textContent);
-          const desc = traduzir(item.querySelector('description')?.textContent);
-          html += `
-            <div class="prayer">
-              <h2>${title}</h2>
-              <div>${desc}</div>
-            </div>
-          `;
-        });
+        for (const entry of ordenados) {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `<h2>${entry.title}</h2><p>${entry.content}</p>`;
+          contentEl.appendChild(div);
+        }
 
-        app.innerHTML = html;
+        console.log("✅ Itens renderizados:", ordenados.length);
       } catch (err) {
-        debug('❌ Erro ao buscar feed: ' + err.message);
-        app.innerHTML = 'Erro ao carregar orações. Verifique o console.';
+        console.error("❌ Erro ao carregar:", err);
+        contentEl.innerHTML = `<p class="loading">Erro ao carregar o conteúdo. Verifique sua conexão.</p>`;
       }
     }
 
-    fetchFeed();
+    carregarLiturgia();
   </script>
 </body>
 </html>
