@@ -4,66 +4,106 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Liturgia das Horas</title>
+  <meta name="description" content="Liturgia das Horas (Ofício Divino) em Português">
   <style>
-    body { font-family: sans-serif; background: #f8fafc; margin: 0; padding: 1rem; }
-    .hour { margin-bottom: 2rem; padding: 1rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .hour h2 { margin-top: 0; color: #2563eb; }
+    body {
+      font-family: sans-serif;
+      background: #f1f5f9;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      color: #2563eb;
+    }
+    .hour {
+      background: #ffffff;
+      margin: 2rem auto;
+      max-width: 800px;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .hour h2 {
+      color: #1e40af;
+    }
+    .hour p {
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
-  <h1>Liturgia das Horas (DivineOffice)</h1>
-  <div id="app">Carregando...</div>
+  <h1>Liturgia das Horas</h1>
+  <div id="app">⏳ Carregando orações...</div>
 
   <script>
-    // Mapeamento simples de horas canônicas
-    const horasMap = {
+    const app = document.getElementById('app');
+
+    const traducoes = {
       'Office of Readings': 'Ofício de Leituras',
       'Morning Prayer': 'Oração da Manhã',
       'Midmorning Prayer': 'Oração da Terça',
       'Midday Prayer': 'Oração da Sexta',
       'Midafternoon Prayer': 'Oração da Nona',
       'Evening Prayer': 'Vésperas',
-      'Night Prayer': 'Completas'
+      'Night Prayer': 'Completas',
+      'Psalm': 'Salmo',
+      'Reading': 'Leitura',
+      'Antiphon': 'Antífona',
+      'Hymn': 'Hino',
+      'Intercessions': 'Preces',
+      'Prayer': 'Oração',
+      'Our Father': 'Pai Nosso',
+      'Amen': 'Amém',
+      'Alleluia': 'Aleluia',
+      'Lord': 'Senhor',
+      'God': 'Deus',
+      'Christ': 'Cristo'
     };
 
     function traduzir(texto) {
-      for (const [en, pt] of Object.entries(horasMap)) {
-        texto = texto.replace(new RegExp(en, 'gi'), pt);
+      if (!texto) return '';
+      for (const [en, pt] of Object.entries(traducoes)) {
+        const regex = new RegExp(en, 'gi');
+        texto = texto.replace(regex, pt);
       }
       return texto;
     }
 
-    async function carregar() {
-      const app = document.getElementById('app');
-      app.textContent = 'Carregando...';
-
-      const res = await fetch(
-        'https://api.allorigins.win/get?url='
-        + encodeURIComponent('https://divineoffice.org/feed/')
-      );
-      const data = await res.json();
-      const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
-      const items = [...xml.querySelectorAll('item')];
-
-      app.innerHTML = '';
-      for (const item of items) {
-        const title = item.querySelector('title')?.textContent || '';
-        const content = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
+    async function carregarOracoes() {
+      try {
+        const res = await fetch(
+          'https://api.allorigins.win/get?url=' + encodeURIComponent('https://divineoffice.org/feed/')
+        );
+        const data = await res.json();
+        const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
+        const items = Array.from(xml.querySelectorAll('item'));
         
-        const titulo = traduzir(title);
-        const conteudo = traduzir(content);
+        app.innerHTML = '';
 
-        const div = document.createElement('div');
-        div.className = 'hour';
-        div.innerHTML = `
-          <h2>${titulo}</h2>
-          <div>${conteudo}</div>
-        `;
-        app.appendChild(div);
+        for (const item of items) {
+          const tituloOriginal = item.querySelector('title')?.textContent || '';
+          const conteudoOriginal = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
+          
+          const titulo = traduzir(tituloOriginal);
+          const conteudo = traduzir(conteudoOriginal);
+
+          const div = document.createElement('div');
+          div.className = 'hour';
+          div.innerHTML = `
+            <h2>${titulo}</h2>
+            <div>${conteudo}</div>
+          `;
+          app.appendChild(div);
+        }
+
+      } catch (error) {
+        console.error('Erro ao carregar feed:', error);
+        app.innerHTML = '<p style="color:red">❌ Erro ao carregar as orações.</p>';
       }
     }
 
-    carregar();
+    carregarOracoes();
   </script>
 </body>
 </html>
