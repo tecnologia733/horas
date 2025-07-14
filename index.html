@@ -250,7 +250,6 @@
             'And with your spirit': 'E com o vosso espírito'
         };
 
-        // Função para tradução simples por regex
         function translateText(text) {
             if (!text) return text;
             let result = text;
@@ -261,7 +260,6 @@
             return result;
         }
 
-        // Funções simples para cache via localStorage
         function saveToCache(key, data) {
             try {
                 localStorage.setItem(CACHE_NAME + '_' + key, JSON.stringify(data));
@@ -279,17 +277,14 @@
             }
         }
 
-        // Parse XML feed e extrai orações
         function parseFeed(xmlText) {
             const parser = new DOMParser();
             const xml = parser.parseFromString(xmlText, "text/xml");
             const items = [...xml.querySelectorAll("item")];
 
-            // Pegar data de hoje para filtrar
             const hoje = new Date();
-            const mesDia = hoje.toLocaleDateString('en-US', {month: 'short', day: '2-digit'}); // e.g., "Jul 14"
+            const mesDia = hoje.toLocaleDateString('en-US', {month: 'short', day: '2-digit'});
 
-            // Mapeia para array de orações
             let prayers = items.map(item => {
                 let title = item.querySelector("title")?.textContent ?? "";
                 let content = item.querySelector("description")?.textContent ?? "";
@@ -298,10 +293,8 @@
                 return {title, content, link};
             });
 
-            // Filtra só as orações do dia atual (baseado no título que contém data)
             prayers = prayers.filter(p => p.title.includes(mesDia));
 
-            // Traduz títulos e conteúdo
             prayers = prayers.map(p => ({
                 title: translateText(p.title),
                 content: translateText(p.content),
@@ -311,9 +304,8 @@
             return prayers;
         }
 
-        // Definir horários aproximados para orações comuns na Liturgia das Horas
         const schedule = [
-            { titleKeywords: ['Invitatório','Invitatory','Invitatório'], hour: 6 },
+            { titleKeywords: ['Invitatório','Invitatory'], hour: 6 },
             { titleKeywords: ['Ofício de Leituras','Office of Readings'], hour: 7 },
             { titleKeywords: ['Oração da Manhã','Morning Prayer','Laudes'], hour: 8 },
             { titleKeywords: ['Oração da Terceira','Midmorning Prayer','Terça','Terce'], hour: 9 },
@@ -323,17 +315,15 @@
             { titleKeywords: ['Oração da Noite','Night Prayer','Completas','Compline'], hour: 21 }
         ];
 
-        // Tenta identificar o horário baseado no título da oração
         function findPrayerHour(title) {
             for (const sch of schedule) {
                 if (sch.titleKeywords.some(keyword => title.includes(keyword))) {
                     return sch.hour;
                 }
             }
-            return 0; // default
+            return 0;
         }
 
-        // Função para renderizar as orações no front
         function renderPrayers(prayers) {
             const main = document.getElementById('main-content');
             if (!prayers.length) {
@@ -341,7 +331,6 @@
                 return;
             }
 
-            // Criar cards HTML com tradução e horário
             const cards = prayers.map((p, i) => {
                 const hour = findPrayerHour(p.title);
                 return `
@@ -358,7 +347,6 @@
 
             main.innerHTML = `<div class="prayers-grid">${cards}</div>`;
 
-            // Expansão de cards
             document.querySelectorAll('.prayer-card').forEach(card => {
                 const btn = card.querySelector('.expand-btn');
                 const content = card.querySelector('.prayer-content');
@@ -384,7 +372,6 @@
                 btn.classList.remove('expanded');
                 card.classList.remove('expanded');
             } else {
-                // Fecha outros abertos
                 document.querySelectorAll('.prayer-card').forEach(otherCard => {
                     if (otherCard !== card) {
                         const otherContent = otherCard.querySelector('.prayer-content');
@@ -403,7 +390,6 @@
             }
         }
 
-        // Highlight oração atual baseado no horário
         function highlightCurrentPrayer() {
             const now = new Date();
             const currentHour = now.getHours();
@@ -421,17 +407,16 @@
             });
         }
 
-        // Busca o feed via proxy para evitar CORS
         async function fetchFeed() {
-            const proxyUrl = "https://api.allorigins.win/get?url=";
-            const targetUrl = encodeURIComponent("https://divineoffice.org/feed/");
+            const proxyUrl = "https://corsproxy.io/?";
+            const targetUrl = "https://divineoffice.org/feed/";
 
             try {
                 const response = await fetch(proxyUrl + targetUrl);
                 if (!response.ok) throw new Error('Erro na rede');
 
-                const data = await response.json();
-                return data.contents;
+                const data = await response.text();
+                return data;
             } catch (e) {
                 console.warn('Falha ao buscar feed:', e);
                 return null;
@@ -449,30 +434,37 @@
                 if (!prayers.length) throw new Error('Nenhuma oração encontrada para hoje');
 
                 saveToCache('prayers', prayers);
-
                 renderPrayers(prayers);
             } catch (error) {
-                const cached = getFromCache('prayers');
-                if (cached && cached.length) {
-                    renderPrayers(cached);
-                    mainContent.insertAdjacentHTML('afterbegin', '<div class="error">Exibindo orações do cache devido a erro de conexão.</div>');
+                console.warn('Erro ao carregar orações:', error);
+
+                // Tenta carregar do cache
+                const cachedPrayers = getFromCache('prayers');
+                if (cachedPrayers && cachedPrayers.length) {
+                    mainContent.innerHTML = `<div class="error">Exibindo orações do cache devido a erro de conexão.</div>`;
+                    renderPrayers(cachedPrayers);
                 } else {
-                    mainContent.innerHTML = `<div class="error">${error.message}</div>`;
+                    mainContent.innerHTML = `<div class="error">Não foi possível carregar as orações.</div>`;
                 }
             }
         }
 
-        // Detecta modo offline para mostrar alerta
-        window.addEventListener('offline', () => {
-            document.getElementById('offline-indicator').classList.add('show');
-        });
+        window.addEventListener('load', () => {
+            main();
 
-        window.addEventListener('online', () => {
-            document.getElementById('offline-indicator').classList.remove('show');
-            main(); // Tenta atualizar ao voltar online
-        });
+            function updateOnlineStatus() {
+                const indicator = document.getElementById('offline-indicator');
+                if (navigator.onLine) {
+                    indicator.classList.remove('show');
+                } else {
+                    indicator.classList.add('show');
+                }
+            }
 
-        main();
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+        });
     </script>
 </body>
 </html>
