@@ -3,340 +3,257 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Liturgia das Horas</title>
-<meta name="description" content="Liturgia das Horas - Ofício Divino em Português" />
-<meta name="theme-color" content="#2563eb" />
+<title>Liturgia das Horas - Ofício Divino</title>
 <style>
-  /* CSS resumido para foco no funcional */
+  /* Reset simples */
   * {
-    margin: 0; padding: 0; box-sizing: border-box;
+    box-sizing: border-box;
   }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f0f4f8;
+    margin: 0; padding: 1rem;
     color: #1e293b;
-    min-height: 100vh;
-    padding: 1rem;
+  }
+  h1 {
+    text-align: center;
+    color: #2563eb;
+    margin-bottom: 2rem;
   }
   .container {
-    max-width: 800px;
-    margin: auto;
-  }
-  header {
-    background: rgba(255 255 255 / 0.95);
-    padding: 2rem;
-    border-radius: 20px;
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-    text-align: center;
-    color: #2563eb;
-  }
-  header h1 {
-    font-size: 2.5rem;
-  }
-  header p {
-    font-size: 1.1rem;
-    color: #64748b;
-  }
-  .loading {
-    text-align: center;
-    padding: 3rem;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    font-weight: 600;
-  }
-  .prayers-grid {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: 1fr;
+    max-width: 900px;
+    margin: 0 auto;
   }
   .prayer-card {
-    background: rgba(255 255 255 / 0.95);
-    border-radius: 20px;
-    padding: 1.5rem 2rem;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
+    margin-bottom: 1rem;
     cursor: pointer;
-    user-select: none;
+    overflow: hidden;
     transition: box-shadow 0.3s ease;
-    overflow-wrap: break-word;
   }
   .prayer-card:hover {
-    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 25px rgb(0 0 0 / 0.15);
   }
   .prayer-title {
+    padding: 1rem 1.5rem;
     font-weight: 700;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: #2563eb;
+    user-select: none;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   .expand-icon {
-    font-weight: 700;
     font-size: 1.5rem;
     transition: transform 0.3s ease;
+    user-select: none;
   }
   .expanded .expand-icon {
     transform: rotate(180deg);
   }
   .prayer-content {
-    margin-top: 1rem;
-    line-height: 1.7;
-    color: #1e293b;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
     display: none;
-    white-space: pre-wrap; /* preserva quebras e espaços */
+    color: #334155;
+    line-height: 1.6;
   }
-  .prayer-card.expanded .prayer-content {
+  .expanded .prayer-content {
     display: block;
   }
-  .offline-indicator {
-    position: fixed;
-    bottom: 1rem;
-    right: 1rem;
-    background: #f59e0b;
-    color: white;
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-    display: none;
+  /* Estilos para conteúdo litúrgico */
+  .prayer-content h2, .prayer-content h3 {
+    color: #1e40af;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
   }
-  .offline-indicator.show {
-    display: block;
+  .prayer-content p {
+    margin-bottom: 1rem;
   }
-  @media (max-width: 640px) {
-    body {
-      padding: 1rem 0.5rem;
-    }
-    header h1 {
-      font-size: 2rem;
-    }
+  .prayer-content em {
+    font-style: italic;
+    color: #475569;
+  }
+  .prayer-content strong {
+    font-weight: 700;
+  }
+  .prayer-content a {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+  .prayer-content ol, .prayer-content ul {
+    margin-left: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .prayer-content blockquote {
+    border-left: 4px solid #2563eb;
+    padding-left: 1rem;
+    color: #475569;
+    font-style: italic;
+    margin: 1rem 0;
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>⛪ Liturgia das Horas</h1>
-    <p>Ofício Divino em Português Brasileiro</p>
-  </header>
-  <main id="main-content">
-    <div class="loading">Carregando orações...</div>
-  </main>
-  <div class="offline-indicator" id="offline-indicator">📱 Modo offline ativo</div>
-</div>
+  <h1>Liturgia das Horas - Ofício Divino</h1>
+  <div class="container" id="container">
+    <div id="loading">Carregando orações...</div>
+  </div>
 
 <script>
-  const CACHE_KEY = 'liturgia-horas-prayers-v2';
+  const proxyUrl = "https://corsproxy.io/?https://divineoffice.org/feed/";
 
-  // Traduções chave a chave (simples, para título e termos)
+  // Tradução simples de termos
   const translations = {
-    'Invitatory': 'Invitatório',
-    'Office of Readings': 'Ofício de Leituras',
-    'Morning Prayer': 'Oração da Manhã',
-    'Midmorning Prayer': 'Oração da Terceira',
-    'Midday Prayer': 'Oração da Sexta',
-    'Midafternoon Prayer': 'Oração da Nona',
-    'Evening Prayer': 'Oração da Tarde',
-    'Night Prayer': 'Oração da Noite',
-    'Matins': 'Matinas',
-    'Lauds': 'Laudes',
-    'Prime': 'Prima',
-    'Terce': 'Terça',
-    'Sext': 'Sexta',
-    'None': 'Nona',
-    'Vespers': 'Vésperas',
-    'Compline': 'Completas',
-    'Psalm': 'Salmo',
-    'Canticle': 'Cântico',
-    'Reading': 'Leitura',
-    'Prayer': 'Oração',
-    'Antiphon': 'Antífona',
-    'Responsory': 'Responsório',
-    'Hymn': 'Hino',
-    'Intercessions': 'Preces',
-    'Our Father': 'Pai Nosso',
-    'Hail Mary': 'Ave Maria',
-    'Glory Be': 'Glória ao Pai',
-    'In the name of the Father': 'Em nome do Pai',
-    'and of the Son': 'e do Filho',
-    'and of the Holy Spirit': 'e do Espírito Santo',
-    'Amen': 'Amém',
-    'Alleluia': 'Aleluia',
-    'Lord, have mercy': 'Senhor, tende piedade',
-    'Christ, have mercy': 'Cristo, tende piedade',
-    'Holy, holy, holy': 'Santo, santo, santo',
-    'Blessed be God': 'Bendito seja Deus',
-    'Thanks be to God': 'Graças a Deus',
-    'Glory to God': 'Glória a Deus',
-    'Peace be with you': 'A paz esteja convosco',
-    'And with your spirit': 'E com o vosso espírito'
+    "Invitatory": "Invitatório",
+    "Office of Readings": "Ofício de Leituras",
+    "Morning Prayer": "Laudes",
+    "Midmorning Prayer": "Terça",
+    "Midday Prayer": "Sexta",
+    "Midafternoon Prayer": "Nona",
+    "Evening Prayer": "Vésperas",
+    "Night Prayer": "Completas",
+    // Frases e termos comuns
+    "Psalm": "Salmo",
+    "Canticle": "Cântico",
+    "Reading": "Leitura",
+    "Prayer": "Oração",
+    "Antiphon": "Antífona",
+    "Responsory": "Responsório",
+    "Hymn": "Hino",
+    "Intercessions": "Preces",
+    "Our Father": "Pai Nosso",
+    "Hail Mary": "Ave Maria",
+    "Glory Be": "Glória ao Pai",
+    "Amen": "Amém",
+    "Alleluia": "Aleluia",
+    "Lord, have mercy": "Senhor, tende piedade",
+    "Christ, have mercy": "Cristo, tende piedade",
+    "Holy, holy, holy": "Santo, santo, santo",
+    "Blessed be God": "Bendito seja Deus",
+    "Thanks be to God": "Graças a Deus",
+    "Glory to God": "Glória a Deus",
+    "Peace be with you": "A paz esteja convosco",
+    "And with your spirit": "E com o vosso espírito"
   };
 
-  // Traduz texto via regex, substituindo termos chave
-  function translateText(text) {
-    if (!text) return text;
-    let t = text;
-    for (const [en, pt] of Object.entries(translations)) {
-      const regex = new RegExp(en, 'gi');
-      t = t.replace(regex, pt);
-    }
-    return t;
-  }
-
-  // Salva dados no localStorage
-  function saveCache(data) {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch {
-      // ignore
-    }
-  }
-  // Recupera cache
-  function loadCache() {
-    try {
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-
-  // Pega o feed XML via proxy
-  async function fetchFeed() {
-    const proxy = 'https://corsproxy.io/?https://divineoffice.org/feed/';
-    try {
-      const res = await fetch(proxy);
-      if (!res.ok) throw new Error('Rede falhou');
-      return await res.text();
-    } catch (e) {
-      console.warn('Erro ao buscar feed:', e);
-      return null;
-    }
-  }
-
-  // Extrai os items do feed, filtra só do dia atual e traduz título + conteúdo
-  function parseFeed(xmlText) {
+  // Função que traduz texto dentro de nós de texto, preservando HTML
+  function translateHTML(htmlString) {
     const parser = new DOMParser();
-    const xml = parser.parseFromString(xmlText, 'application/xml');
-    const items = [...xml.querySelectorAll('item')];
-
-    const hoje = new Date();
-    // Formato para encontrar no título - ex: Jul 14
-    const mesDia = hoje.toLocaleDateString('en-US', {month:'short', day:'2-digit'});
-
-    // Filtra só itens que contém data de hoje no título (ex: "Lauds, Jul 14")
-    let prayers = items.filter(i => {
-      const title = i.querySelector('title')?.textContent || '';
-      return title.includes(mesDia);
-    });
-
-    // Extrai e traduz
-    prayers = prayers.map(i => {
-      const titleRaw = i.querySelector('title')?.textContent || '';
-      const contentRaw = i.querySelector('description')?.textContent || '';
-      return {
-        title: translateText(titleRaw),
-        content: translateText(stripHtml(contentRaw))
-      };
-    });
-
-    return prayers;
-  }
-
-  // Remove tags HTML simples (para exibir texto limpo)
-  function stripHtml(html) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-  }
-
-  // Renderiza somente os títulos na lista
-  function renderTitles(prayers) {
-    const main = document.getElementById('main-content');
-    if (!prayers.length) {
-      main.innerHTML = `<div class="loading">Nenhuma oração disponível para hoje.</div>`;
-      return;
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    while(walker.nextNode()) {
+      const node = walker.currentNode;
+      let txt = node.textContent;
+      for (const [en, pt] of Object.entries(translations)) {
+        // substitui termos respeitando maiúsculas/minúsculas
+        const regex = new RegExp('\\b' + en + '\\b', 'gi');
+        txt = txt.replace(regex, match => {
+          // Mantém maiúsculas no início, minusculas no resto
+          if (match[0] === match[0].toUpperCase()) {
+            return pt.charAt(0).toUpperCase() + pt.slice(1);
+          } else {
+            return pt.toLowerCase();
+          }
+        });
+      }
+      node.textContent = txt;
     }
-    main.innerHTML = '<div class="prayers-grid"></div>';
-    const grid = main.querySelector('.prayers-grid');
+    return doc.body.innerHTML;
+  }
 
-    prayers.forEach((p, i) => {
-      const card = document.createElement('div');
-      card.className = 'prayer-card';
-      card.innerHTML = `
-        <div class="prayer-title">
-          <span>${p.title}</span>
-          <span class="expand-icon">▼</span>
-        </div>
-        <div class="prayer-content"></div>
-      `;
+  // Função para buscar e processar o feed RSS
+  async function fetchAndRender() {
+    const container = document.getElementById('container');
+    const loading = document.getElementById('loading');
+    try {
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error('Erro ao buscar feed');
 
-      // Expansão do conteúdo traduzido ao clicar
-      card.querySelector('.prayer-title').addEventListener('click', () => {
-        const expanded = card.classList.toggle('expanded');
-        const contentDiv = card.querySelector('.prayer-content');
-        const icon = card.querySelector('.expand-icon');
+      const data = await response.text();
+      // A resposta é JSON com o campo contents que tem o XML
+      const json = JSON.parse(data);
+      const xmlText = json.contents;
 
-        if (expanded) {
-          contentDiv.textContent = p.content;
-          icon.textContent = '▲';
-          card.scrollIntoView({behavior: 'smooth', block: 'start'});
-        } else {
-          contentDiv.textContent = '';
-          icon.textContent = '▼';
+      // Parse XML
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+
+      const items = xmlDoc.querySelectorAll('item');
+
+      // Data de hoje pra filtrar só orações atuais
+      const today = new Date();
+      const todayMonthDay = today.toLocaleDateString('en-US', {month:'short', day:'2-digit'});
+
+      // Array pra armazenar orações do dia
+      const prayers = [];
+
+      items.forEach(item => {
+        const title = item.querySelector('title')?.textContent || "";
+        const pubDate = item.querySelector('pubDate')?.textContent || "";
+        // Filtra só títulos que tenham a data de hoje (ex: "Morning Prayer - Jul 14")
+        if(title.includes(todayMonthDay)) {
+          // Conteúdo com html (description)
+          const content = item.querySelector('description')?.textContent || "";
+          prayers.push({title, content});
         }
       });
 
-      grid.appendChild(card);
-    });
-  }
-
-  async function main() {
-    const main = document.getElementById('main-content');
-    main.innerHTML = `<div class="loading">Carregando orações...</div>`;
-
-    let prayers = null;
-    let fromCache = false;
-
-    const feedXml = await fetchFeed();
-    if (feedXml) {
-      prayers = parseFeed(feedXml);
-      if (prayers.length) {
-        saveCache(prayers);
-      } else {
-        prayers = loadCache();
-        fromCache = true;
+      if(prayers.length === 0) {
+        loading.textContent = "Nenhuma oração disponível para hoje.";
+        return;
       }
-    } else {
-      prayers = loadCache();
-      fromCache = true;
-    }
 
-    if (!prayers || prayers.length === 0) {
-      main.innerHTML = `<div class="loading">Nenhuma oração encontrada.</div>`;
-      return;
-    }
+      loading.style.display = 'none';
 
-    renderTitles(prayers);
+      // Cria cards só com título (hora canônica traduzida), conteúdo escondido
+      prayers.forEach(({title, content}, i) => {
+        // Traduz título (apenas, para o card)
+        let translatedTitle = title;
+        for(const [en, pt] of Object.entries(translations)) {
+          const regex = new RegExp('\\b' + en + '\\b', 'gi');
+          translatedTitle = translatedTitle.replace(regex, pt);
+        }
+        const card = document.createElement('div');
+        card.className = 'prayer-card';
+        card.setAttribute('tabindex', '0');
 
-    // Aviso modo offline se usar cache
-    if (fromCache) {
-      document.getElementById('offline-indicator').classList.add('show');
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'prayer-title';
+        titleDiv.innerHTML = `${translatedTitle} <span class="expand-icon">▼</span>`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'prayer-content';
+
+        // Traduz o conteúdo com HTML preservado
+        contentDiv.innerHTML = translateHTML(content);
+
+        card.appendChild(titleDiv);
+        card.appendChild(contentDiv);
+
+        // Toggle expand
+        titleDiv.addEventListener('click', () => {
+          card.classList.toggle('expanded');
+        });
+        card.addEventListener('keydown', (e) => {
+          if(e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            card.classList.toggle('expanded');
+          }
+        });
+
+        container.appendChild(card);
+      });
+
+    } catch (e) {
+      loading.textContent = "Erro ao carregar orações: " + e.message;
+      console.error(e);
     }
   }
 
-  main();
-
-  // Opcional: detecta offline e mostra aviso
-  window.addEventListener('offline', () => {
-    document.getElementById('offline-indicator').classList.add('show');
-  });
-  window.addEventListener('online', () => {
-    document.getElementById('offline-indicator').classList.remove('show');
-  });
+  fetchAndRender();
 </script>
 </body>
 </html>
