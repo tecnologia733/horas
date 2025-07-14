@@ -203,7 +203,6 @@
 
         // Tradução de títulos e termos comuns
         const translations = {
-            // Horas canônicas
             'Invitatory': 'Invitatório',
             'Office of Readings': 'Ofício de Leituras',
             'Morning Prayer': 'Oração da Manhã',
@@ -220,13 +219,11 @@
             'None': 'Nona',
             'Vespers': 'Vésperas',
             'Compline': 'Completas',
-            // Termos litúrgicos
             'Advent': 'Advento',
             'Christmas': 'Natal',
             'Lent': 'Quaresma',
             'Easter': 'Páscoa',
             'Ordinary Time': 'Tempo Comum',
-            // Elementos da oração
             'Psalm': 'Salmo',
             'Canticle': 'Cântico',
             'Reading': 'Leitura',
@@ -238,7 +235,6 @@
             'Our Father': 'Pai Nosso',
             'Hail Mary': 'Ave Maria',
             'Glory Be': 'Glória ao Pai',
-            // Frases comuns
             'In the name of the Father': 'Em nome do Pai',
             'and of the Son': 'e do Filho',
             'and of the Holy Spirit': 'e do Espírito Santo',
@@ -453,42 +449,30 @@
                 if (!prayers.length) throw new Error('Nenhuma oração encontrada para hoje');
 
                 saveToCache('prayers', prayers);
-                              renderPrayers(prayers);
+
+                renderPrayers(prayers);
             } catch (error) {
-                console.error(error);
-                // Tenta usar cache em caso de erro
                 const cached = getFromCache('prayers');
                 if (cached && cached.length) {
                     renderPrayers(cached);
-                    showOfflineIndicator(true);
+                    mainContent.insertAdjacentHTML('afterbegin', '<div class="error">Exibindo orações do cache devido a erro de conexão.</div>');
                 } else {
-                    mainContent.innerHTML = `<div class="error">Não foi possível carregar as orações no momento.</div>`;
+                    mainContent.innerHTML = `<div class="error">${error.message}</div>`;
                 }
             }
         }
 
-        // Mostra indicador de modo offline
-        function showOfflineIndicator(show) {
-            const indicator = document.getElementById('offline-indicator');
-            if (show) {
-                indicator.classList.add('show');
-            } else {
-                indicator.classList.remove('show');
-            }
-        }
+        // Detecta modo offline para mostrar alerta
+        window.addEventListener('offline', () => {
+            document.getElementById('offline-indicator').classList.add('show');
+        });
 
-        // Detecta se está offline e mostra aviso
-        window.addEventListener('online', () => showOfflineIndicator(false));
-        window.addEventListener('offline', () => showOfflineIndicator(true));
-
-        // Inicializa
-        if (!navigator.onLine) {
-            showOfflineIndicator(true);
-        }
+        window.addEventListener('online', () => {
+            document.getElementById('offline-indicator').classList.remove('show');
+            main(); // Tenta atualizar ao voltar online
+        });
 
         main();
     </script>
 </body>
 </html>
-
-               
