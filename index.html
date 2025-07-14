@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Liturgia das Horas</title>
-  <meta name="description" content="Liturgia das Horas (Ofício Divino) em Português">
+  <title>Liturgia das Horas (Depuração)</title>
   <style>
     body {
       font-family: sans-serif;
@@ -30,14 +29,30 @@
     .hour p {
       line-height: 1.6;
     }
+    .log {
+      font-size: 0.9rem;
+      background: #fef9c3;
+      padding: 0.5rem;
+      margin: 1rem auto;
+      max-width: 800px;
+      border: 1px solid #facc15;
+      color: #854d0e;
+    }
   </style>
 </head>
 <body>
-  <h1>Liturgia das Horas</h1>
-  <div id="app">⏳ Carregando orações...</div>
+  <h1>🛠 Liturgia das Horas - Depuração</h1>
+  <div id="log" class="log">⏳ Iniciando carregamento...</div>
+  <div id="app">Carregando...</div>
 
   <script>
     const app = document.getElementById('app');
+    const log = document.getElementById('log');
+
+    function debug(msg) {
+      console.log(msg);
+      log.innerHTML += `<br>📌 ${msg}`;
+    }
 
     const traducoes = {
       'Office of Readings': 'Ofício de Leituras',
@@ -72,19 +87,49 @@
 
     async function carregarOracoes() {
       try {
-        const res = await fetch(
-          'https://api.allorigins.win/get?url=' + encodeURIComponent('https://divineoffice.org/feed/')
-        );
+        const proxyUrl = 'https://api.allorigins.win/get?url=';
+        const feedUrl = 'https://divineoffice.org/feed/';
+        const finalUrl = proxyUrl + encodeURIComponent(feedUrl);
+        
+        debug('🔍 Buscando RSS em: ' + finalUrl);
+        const res = await fetch(finalUrl);
+
+        if (!res.ok) {
+          debug(`❌ Erro na resposta HTTP: ${res.status}`);
+          app.innerHTML = '<p>Erro na requisição.</p>';
+          return;
+        }
+
         const data = await res.json();
+        if (!data.contents) {
+          debug('❌ Nenhum conteúdo retornado pelo proxy.');
+          app.innerHTML = '<p>Sem conteúdo retornado.</p>';
+          return;
+        }
+
         const xml = new DOMParser().parseFromString(data.contents, 'text/xml');
         const items = Array.from(xml.querySelectorAll('item'));
-        
+
+        debug(`✅ Itens encontrados no feed: ${items.length}`);
+
+        if (items.length === 0) {
+          debug('⚠️ Feed XML retornado sem <item>.');
+          app.innerHTML = '<p>Nenhuma oração disponível.</p>';
+          return;
+        }
+
         app.innerHTML = '';
 
         for (const item of items) {
-          const tituloOriginal = item.querySelector('title')?.textContent || '';
-          const conteudoOriginal = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
-          
+          const titleEl = item.querySelector('title');
+          const contentEl = item.getElementsByTagName('content:encoded')[0];
+
+          const tituloOriginal = titleEl?.textContent || '';
+          const conteudoOriginal = contentEl?.textContent || '';
+
+          debug(`📄 Título original: "${tituloOriginal.slice(0, 50)}..."`);
+          debug(`📦 Conteúdo presente: ${!!conteudoOriginal}`);
+
           const titulo = traduzir(tituloOriginal);
           const conteudo = traduzir(conteudoOriginal);
 
@@ -92,14 +137,19 @@
           div.className = 'hour';
           div.innerHTML = `
             <h2>${titulo}</h2>
-            <div>${conteudo}</div>
+            <div>${conteudo || '<em>Sem conteúdo.</em>'}</div>
           `;
           app.appendChild(div);
         }
 
-      } catch (error) {
-        console.error('Erro ao carregar feed:', error);
-        app.innerHTML = '<p style="color:red">❌ Erro ao carregar as orações.</p>';
+        if (items.length === 0) {
+          app.innerHTML = '<p>Nenhuma oração foi encontrada.</p>';
+        }
+
+      } catch (err) {
+        console.error(err);
+        debug('❌ Erro inesperado: ' + err.message);
+        app.innerHTML = '<p>Erro ao carregar as orações.</p>';
       }
     }
 
